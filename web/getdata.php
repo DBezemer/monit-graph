@@ -40,7 +40,7 @@
 	else $time_range = $_GET['time_range'];
 
 	$replace = array("../","data/");
-	$_GET['file'] = $include_path."data/".str_replace($replace,"",$_GET['file']);
+	$_GET['file'] = $include_path."/data/".str_replace($replace,"",$_GET['file']);
 
 	if(!file_exists($_GET['file'])) echo json_encode(array());
 

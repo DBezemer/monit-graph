@@ -265,6 +265,7 @@ EOF;
 			if(empty($services)){
 				echo "<span>No log files found</span>";
 			}else{
+                $disks = 0;
 				echo '<div class="service_header">';
 				echo "<div><strong>Service:</strong></div>";
 				echo "<div><strong>CPU:</strong></div>";
@@ -275,20 +276,55 @@ EOF;
 				echo '</div>';
 				echo '<div class="clear"></div>';
 				foreach($services as $service){
-					if($service['status']==0) $status_color = "00FF00";
-					else $status_color = "FF0000";
-					if($service['swap']!="") $service['swap'].="%";
-					else $service['swap']="-";
-					echo '<div class="service_row">';
-					echo '<div><span style="color:#'.$status_color.'">●</span> <a href="?server_id='.$config['server_id'].'&amp;specific_services='.urlencode($service['name']).'">'.$service['name']."</a></div>";
-					echo "<div>".$service['cpu']."%</div>";
-					echo "<div>".$service['memory']."%</div>";
-					echo "<div>".$service['swap']."</div>";
-					echo "<div>".date("H:i:s d-m-Y",$service['time'])."</div>";
-					echo '<div><a class="btn" href="?delete_data='.urlencode($service['name'].".xml").'&amp;id='.$config['server_id'].'">Delete service data</a></div>';
-					echo '</div>';
-					echo '<div class="clear"></div>';
+                    if($service['status']==0) {
+                        $status_color = "00FF00";
+                    } else {
+                        $status_color = "FF0000";
+                    }
+                    if($service['type'] != 0) {
+                        if($service['swap']!="") $service['swap'].="%";
+                        else $service['swap']="-";
+                        echo '<div class="service_row">';
+                        echo '<div><span style="color:#'.$status_color.'">●</span> <a href="?server_id='.$config['server_id'].'&amp;specific_services='.urlencode($service['name']).'">'.$service['name']."</a></div>";
+                        echo "<div>".$service['cpu']."%</div>";
+                        echo "<div>".$service['memory']."%</div>";
+                        echo "<div>".$service['swap']."</div>";
+                        echo "<div>".date("H:i:s d-m-Y",$service['time'])."</div>";
+                        echo '<div><a class="btn" href="?delete_data='.urlencode($service['name'].".xml").'&amp;id='.$config['server_id'].'">Delete service data</a></div>';
+                        echo '</div>';
+                        echo '<div class="clear"></div>';
+                    } else {
+                        $disks = 1;
+                    }
 				}
+                if($disks = 1) {
+                    echo '<br />';
+                    echo '<div class="service_header">';
+                    echo "<div><strong>Disk:</strong></div>";
+                    echo "<div><strong>Percentage:</strong></div>";
+                    echo "<div><strong>Usage:</strong></div>";
+                    echo "<div><strong>Total:</strong></div>";
+                    echo '</div>';
+                    echo '<div class="clear"></div>';
+                    foreach($services as $service){
+                        if($service['status']==0) {
+                            $status_color = "00FF00";
+                        } else {
+                            $status_color = "FF0000";
+                        }
+                        if($service['type'] == 0) {
+                            echo '<div class="service_row">';
+                            echo '<div><span style="color:#'.$status_color.'">●</span> <a href="?server_id='.$config['server_id'].'&amp;specific_services='.urlencode($service['name']).'">'.$service['name']."</a></div>";
+                            echo "<div>".$service['disk_percent']."%</div>";
+                            echo "<div>".$service['disk_usage']."GB</div>";
+                            echo "<div>".$service['disk_total']."GB</div>";
+                            echo "<div>".date("H:i:s d-m-Y",$service['time'])."</div>";
+                            echo '<div><a class="btn" href="?delete_data='.urlencode($service['name'].".xml").'&amp;id='.$config['server_id'].'">Delete service data</a></div>';
+                            echo '</div>';
+                            echo '<div class="clear"></div>';
+                        }
+                    }
+                }
 				echo '
 		<div class="actions">
 			<a class="btn" href="?server_id='.$config['server_id'].'">View all logs for '.$config['name'].'</a>

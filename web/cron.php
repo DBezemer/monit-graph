@@ -35,7 +35,7 @@
 	/* Running cron with config options */
 	$include_path = realpath(dirname(__FILE__));
  	require_once($include_path."/config/config.php");
-	require_once($include_path."monit-graph.class.php");
+	require_once($include_path."/monit-graph.class.php");
 
 	if(!MonitGraph::checkConfig($server_configs)) die();
 

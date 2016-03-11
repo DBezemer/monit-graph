@@ -238,7 +238,7 @@
 		 * Will write the XML history file for a specific service. Inputs simplexml object and service type
 		*/
 		public static function writeServiceHistoric($server_id, $xml, $type, $chunk_size = 0, $number_of_chunks = 0){
-			if($type=="3" || $type=="5" || $type=="7"){ // Only services and programs
+			if($type=="3" || $type=="5" || $type=="7" || $type=="0"){ // Only services and programs
 				$name = $xml->name;
 				if(!self::datapathWriteable()) exit("Cannot write in data path");
 
@@ -258,7 +258,32 @@
 				$time->value = $xml->collected_sec;
 				$new_service->appendChild($time);
 
-				if($type=="5"){ // System
+                if( $type=="0" ){ // Disk
+                    $disk_percent = $dom->createElement("disk_percent",$xml->block->percent);
+                    $new_service->appendChild($disk_percent);
+                    
+                    $disk_usage = $dom->createElement("disk_usage",intval($xml->block->usage/1024));
+                    $new_service->appendChild($disk_usage);
+                    
+                    $disk_total = $dom->createElement("disk_total",intval($xml->block->total/1024));
+                    $new_service->appendChild($disk_total);
+                    
+                } else if ( $type == "3" ){ // Process
+					$memory = $dom->createElement("memory",self::getMonitPercentage($xml->memory));
+					$new_service->appendChild($memory);
+
+					$cpu = $dom->createElement("cpu",self::getMonitPercentage($xml->cpu));
+					$new_service->appendChild($cpu);
+
+					$pid = $dom->createElement("pid",$xml->pid);
+					$new_service->appendChild($pid);
+
+					$uptime = $dom->createElement("uptime",$xml->uptime);
+					$new_service->appendChild($uptime);
+
+					$children = $dom->createElement("children",$xml->children);
+					$new_service->appendChild($children);
+				} else if($type=="5"){ // System
 					$memory = $dom->createElement("memory",$xml->system->memory->percent);
 					$new_service->appendChild($memory);
 
@@ -275,27 +300,6 @@
 
 					$program_status = $dom->createElement( "program_status", $xml->program->status );
 					$new_service->appendChild($program_status);
-
-					// Uncomment those lines to get program output logged into XML,
-					// but keep in mind that it's not yet supported in front-end.
-					//  $program_output = $dom->createElement( "program_output", $xml->program->output );
-					//  $new_service->appendChild($program_output);
-
-				}else{ // Process
-					$memory = $dom->createElement("memory",self::getMonitPercentage($xml->memory));
-					$new_service->appendChild($memory);
-
-					$cpu = $dom->createElement("cpu",self::getMonitPercentage($xml->cpu));
-					$new_service->appendChild($cpu);
-
-					$pid = $dom->createElement("pid",$xml->pid);
-					$new_service->appendChild($pid);
-
-					$uptime = $dom->createElement("uptime",$xml->uptime);
-					$new_service->appendChild($uptime);
-
-					$children = $dom->createElement("children",$xml->children);
-					$new_service->appendChild($children);
 				}
 
 				$status = $dom->createElement("status",$xml->status);
@@ -355,7 +359,22 @@
 			}
 
 			$array = array();
-			if($xml["type"]=="5"){
+			if ( $xml["type"]=="0" ) {
+				$array["cols"]=array(
+								array("label"=>"Time","type"=>"datetime"),
+								array("label"=>"Disk Usage","type"=>"number"),
+								array("label"=>"Alerts","type"=>"number")
+							);
+			}
+            else if ( $xml["type"]=="3"){
+				$array["cols"]=array(
+								array("label"=>"Time","type"=>"datetime"),
+								array("label"=>"CPU Usage","type"=>"number"),
+								array("label"=>"Memory Usage","type"=>"number"),
+								array("label"=>"Alerts","type"=>"number")
+							);
+			}
+			else if($xml["type"]=="5"){
 				$array["cols"]=array(
 								array("label"=>"Time","type"=>"datetime"),
 								array("label"=>"CPU Usage","type"=>"number"),
@@ -367,13 +386,6 @@
 				$array["cols"]=array(
 								array("label"=>"Time","type"=>"datetime"),
 								array("label"=>"Status","type"=>"number"),
-								array("label"=>"Alerts","type"=>"number")
-							);
-			}else{
-				$array["cols"]=array(
-								array("label"=>"Time","type"=>"datetime"),
-								array("label"=>"CPU Usage","type"=>"number"),
-								array("label"=>"Memory Usage","type"=>"number"),
 								array("label"=>"Alerts","type"=>"number")
 							);
 			}
@@ -391,7 +403,22 @@
 					if($time_range>0 && $record['time']<(time()-$time_range)) break; // Stop with data if we have reached the time range
 
 					/* Different setup for different service types */
-					if($xml["type"]=="5"){
+                    if($xml["type"]=="0") {
+						$array["rows"][]["c"]=array(
+								array("v"=>"%%new Date(".(intVal($record['time'])*1000).")%%"),
+								array("v"=>(float)$record->disk_percent),
+								array("v"=>(float)$record->alert*100)
+							);
+					}
+                    else if($xml["type"]=="3") {
+						$array["rows"][]["c"]=array(
+								array("v"=>"%%new Date(".(intVal($record['time'])*1000).")%%"),
+								array("v"=>(float)$record->cpu),
+								array("v"=>(float)$record->memory),
+								array("v"=>(float)$record->alert*100)
+							);
+					}
+					else if($xml["type"]=="5"){
 						$array["rows"][]["c"]=array(
 								array("v"=>"%%new Date(".(intVal($record['time'])*1000).")%%"),
 								array("v"=>(float)$record->cpu),
@@ -403,13 +430,6 @@
 						$array["rows"][]["c"]=array(
 								array("v"=>"%%new Date(".(intVal($record['time'])*1000).")%%"),
 								array("v"=>(float)$record->program_status),
-								array("v"=>(float)$record->alert*100)
-							);
-					}else{
-						$array["rows"][]["c"]=array(
-								array("v"=>"%%new Date(".(intVal($record['time'])*1000).")%%"),
-								array("v"=>(float)$record->cpu),
-								array("v"=>(float)$record->memory),
 								array("v"=>(float)$record->alert*100)
 							);
 					}
@@ -470,15 +490,19 @@
 			$return_array = array();
 			foreach($files as $file){
 				if(!file_exists($file) or !$xml=simplexml_load_string(file_get_contents($file))){
-					error_log("[".self::identifier."] ".__FILE__." line ".__LINE__.": $filename could not be loaded!");
-					return false;
+					error_log("[".self::identifier."] ".__FILE__." line ".__LINE__.": $file could not be loaded!");
+					continue;
 				}
 				$return_array[]=array(
 									"name"=>$xml['name'],
+                                    "type"=>$xml['type'],
 									"time"=>intVal($xml->record[0]['time']),
 									"memory"=>$xml->record[0]->memory,
 									"cpu"=>$xml->record[0]->cpu,
 									"swap"=>@$xml->record[0]->swap,
+                                    "disk_percent"=>@$xml->record[0]->disk_percent,
+                                    "disk_usage"=>@$xml->record[0]->disk_usage,
+                                    "disk_total"=>@$xml->record[0]->disk_total,
 									"status"=>$xml->record[0]->status);
 			}
 			return $return_array;
