@@ -257,8 +257,6 @@ EOF;
 	}else{
 		foreach($server_configs as $config){
 			$services = MonitGraph::getLastRecord($config['server_id']);
-			if(!$services) die("No log files where found. Please run cron first.");
-
 			echo '
 	<div class="server_box bordered_box">
 		<h2>'.$config['name'].' status</h2>';
